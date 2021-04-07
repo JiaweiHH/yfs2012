@@ -69,11 +69,6 @@
 #include <netinet/tcp.h>
 #include <sys/types.h>
 #include <time.h>
-<<<<<<< HEAD
-=======
-#include <netdb.h>
-#include <unistd.h>
->>>>>>> 8a67ace7ba9ff027d1754ac3093cf798717604e6
 
 #include "gettime.h"
 #include "jsl_log.h"
@@ -690,20 +685,11 @@ rpcs::rpcstate_t rpcs::checkduplicate_and_update(unsigned int clt_nonce,
 // add_reply() should remember b and sz.
 // free_reply_window() and checkduplicate_and_update is responsible for
 // calling free(b).
-<<<<<<< HEAD
 void rpcs::add_reply(unsigned int clt_nonce, unsigned int xid, char *b,
                      int sz) {
   ScopedLock rwl(&reply_window_m_);
   // You fill this in for Lab 1.
 	std::map<unsigned int, std::list<reply_t>>::iterator clt;
-=======
-void
-rpcs::add_reply(unsigned int clt_nonce, unsigned int xid,
-		char *b, int sz)
-{
-	ScopedLock rwl(&reply_window_m_);
-	std::map<unsigned int, std::list<reply_t> >::iterator clt;
->>>>>>> 8a67ace7ba9ff027d1754ac3093cf798717604e6
 	std::list<reply_t>::iterator iter;
 	clt = reply_window_.find(clt_nonce);
 	if (clt != reply_window_.end()) {
@@ -714,24 +700,6 @@ rpcs::add_reply(unsigned int clt_nonce, unsigned int xid,
 				iter->cb_present = true;
 				break; 
 			}
-<<<<<<< HEAD
-=======
-		}
-	}
-        // You fill this in for Lab 1.
-}
-
-void
-rpcs::free_reply_window(void)
-{
-	std::map<unsigned int,std::list<reply_t> >::iterator clt;
-	std::list<reply_t>::iterator it;
-
-	ScopedLock rwl(&reply_window_m_);
-	for (clt = reply_window_.begin(); clt != reply_window_.end(); clt++){
-		for (it = clt->second.begin(); it != clt->second.end(); it++){
-			free((*it).buf);
->>>>>>> 8a67ace7ba9ff027d1754ac3093cf798717604e6
 		}
 	}
 }
