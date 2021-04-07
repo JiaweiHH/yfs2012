@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "connection.h"
 #include "marshall.h"
@@ -270,7 +271,7 @@ private:
       sz = 0;
     }
     unsigned int xid;
-    bool cb_present; // whether the reply buffer is valid
+    bool cb_present; // whether the reply buffer is valid，用这个判断是不是正在被处理
     char *buf;       // the reply buffer
     int sz;          // the size of reply buffer
   };
