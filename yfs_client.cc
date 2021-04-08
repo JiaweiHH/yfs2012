@@ -125,6 +125,3 @@ int yfs_client::create(inum p_inum, std::string name, inum &c_inum) {
     return EXIST;
   return IOERR;
 }
-
-
-
