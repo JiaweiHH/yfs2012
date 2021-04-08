@@ -5,6 +5,7 @@
 //#include "yfs_protocol.h"
 #include "extent_client.h"
 #include <vector>
+#include <algorithm>
 
 
 class yfs_client {
@@ -14,7 +15,6 @@ class yfs_client {
   typedef unsigned long long inum;
   enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };
   typedef int status;
-
   struct fileinfo {
     unsigned long long size;
     unsigned long atime;
@@ -43,6 +43,9 @@ class yfs_client {
 
   int getfile(inum, fileinfo &);
   int getdir(inum, dirinfo &);
+  int lookup(inum, const char *, inum &);
+  int readdir(inum, std::vector<yfs_client::dirent> &);
+  int create(inum , std::string , inum &);
 };
 
 #endif 

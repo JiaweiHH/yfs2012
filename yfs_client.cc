@@ -89,5 +89,42 @@ yfs_client::getdir(inum inum, dirinfo &din)
   return r;
 }
 
+int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
+  int r = OK;
+  if(ec->lookup(p_inum, name, c_inum) != extent_protocol::OK) {
+    r = IOERR;
+  }
+  return r;
+}
+
+int yfs_client::readdir(inum inum, std::vector<yfs_client::dirent> &v_contents) {
+  int r = IOERR;
+  printf("readdir %016llx\n", inum);
+  std::map<extent_protocol::extentid_t, std::string> contents;
+  if(ec->readdir(inum, contents) == extent_protocol::OK) {
+    for(auto &pair : contents) {
+      dirent d;
+      d.inum = pair.first;
+      d.name = pair.second;
+      v_contents.push_back(d);
+    }
+    for(auto &pair : contents) {
+      std::cout << "pair: (" << pair.first << ", " << pair.second << ")\n";
+    }
+    r = OK;
+  }
+  return r;
+}
+
+int yfs_client::create(inum p_inum, std::string name, inum &c_inum) {
+  extent_protocol::status status = ec->create(p_inum, name, c_inum);
+  if(status == extent_protocol::OK) {
+    std::cout << name << " create OK\n";
+    return OK;
+  }else if(status == extent_protocol::EXIST)
+    return EXIST;
+  return IOERR;
+}
+
 
 

@@ -211,6 +211,7 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
 //
 // @return yfs_client::OK on success, and EXIST if @name already exists.
 //
+
 yfs_client::status
 fuseserver_createhelper(fuse_ino_t parent, const char *name,
                         mode_t mode, struct fuse_entry_param *e)
@@ -220,6 +221,19 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
   e->entry_timeout = 0.0;
   e->generation = 0;
   // You fill this in for Lab 2
+  yfs_client::inum child_id;
+  yfs_client::status status;
+  // if(yfs->lookup(parent, name, child_id) == yfs_client::OK) {
+  //   return yfs_client::EXIST;
+  // }
+  status = yfs->create(parent, name, child_id);
+  if(status == yfs_client::OK) {
+    getattr(child_id, e->attr);
+    e->ino = child_id;
+    return yfs_client::OK;
+  }else if(status == yfs_client::EXIST)
+    return yfs_client::EXIST;
+
   return yfs_client::NOENT;
 }
 
@@ -271,6 +285,12 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   bool found = false;
 
   // You fill this in for Lab 2
+  yfs_client::inum child_id;
+  if(yfs->lookup(parent, name, child_id) == yfs_client::OK) {
+    getattr(child_id, e.attr);
+    e.ino = child_id;
+    found = true;
+  }
   if (found)
     fuse_reply_entry(req, &e);
   else
@@ -330,9 +350,14 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 
   memset(&b, 0, sizeof(b));
 
-
   // You fill this in for Lab 2
-
+  std::vector<yfs_client::dirent> v_contents;
+  // std::map<extent_protocol::extentid_t, std::string> contents;
+  if(yfs->readdir(ino, v_contents) == yfs_client::OK) {
+    std::for_each(v_contents.begin(), v_contents.end(), [&](const yfs_client::dirent &dt) { 
+                    dirbuf_add(&b, dt.name.c_str(), dt.inum); 
+                  });
+  }
 
   reply_buf_limited(req, b.p, b.size, off, size);
   free(b.p);
