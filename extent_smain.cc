@@ -34,6 +34,8 @@ main(int argc, char *argv[])
   server.reg(extent_protocol::lookup, &ls, &extent_server::lookup);
   server.reg(extent_protocol::readdir, &ls, &extent_server::readdir);
   server.reg(extent_protocol::create, &ls, &extent_server::create);
+  server.reg(extent_protocol::read, &ls, &extent_server::read);
+  server.reg(extent_protocol::write, &ls, &extent_server::write);
   while(1)
     sleep(1000);
 }

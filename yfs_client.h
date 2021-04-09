@@ -46,6 +46,9 @@ class yfs_client {
   int lookup(inum, const char *, inum &);
   int readdir(inum, std::vector<yfs_client::dirent> &);
   int create(inum , std::string , inum &);
+  int setattr(inum, const struct stat &);
+  int read(inum, off_t, size_t, std::string &);
+  int write(inum, off_t, size_t, std::string);
 };
 
 #endif 

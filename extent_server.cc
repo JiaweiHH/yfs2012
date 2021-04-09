@@ -3,12 +3,14 @@
 #include "extent_server.h"
 #include <algorithm>
 #include <fcntl.h>
+#include <iterator>
 #include <random>
 #include <sstream>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iterator>
 
 extent_server::extent_server() {
   std::string content = "";
@@ -31,21 +33,21 @@ void extent_server::put_content(const extent_protocol::extentid_t &id,
                                 const std::string &buf) {
   extent_protocol::attr attr;
   attr.mtime = attr.ctime = time(nullptr);
-  file_map[id].attr_.size = buf.size();
+  attr.size = buf.size();
   file_map[id].data_ = std::move(buf);
   file_map[id].attr_ = std::move(attr);
 }
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &) {
   // You fill this in for Lab 2.
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   put_content(id, buf);
   return extent_protocol::OK;
 }
 
 int extent_server::get(extent_protocol::extentid_t id, std::string &buf) {
   // You fill this in for Lab 2.
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   auto iter = file_map.find(id);
   if (iter != file_map.end()) {
     buf = iter->second.data_;
@@ -63,7 +65,7 @@ int extent_server::getattr(extent_protocol::extentid_t id,
   // for now because it's difficult to get FUSE to do anything (including
   // unmount) if getattr fails.
 
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   auto iter = file_map.find(id);
   if (iter != file_map.end()) {
     a = iter->second.attr_;
@@ -75,7 +77,7 @@ int extent_server::getattr(extent_protocol::extentid_t id,
 
 int extent_server::remove(extent_protocol::extentid_t id, int &) {
   // You fill this in for Lab 2.
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   auto iter = file_map.find(id);
   if (iter != file_map.end()) {
     file_map.erase(iter);
@@ -87,7 +89,7 @@ int extent_server::remove(extent_protocol::extentid_t id, int &) {
 int extent_server::lookup(extent_protocol::extentid_t parent_id,
                           std::string name,
                           extent_protocol::extentid_t &child_id) {
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   // std::string name(c_name);
   std::cout << "lookup begin. name " << name << " parent id " << parent_id
             << "\n";
@@ -113,7 +115,7 @@ int extent_server::lookup(extent_protocol::extentid_t parent_id,
 int extent_server::readdir(
     extent_protocol::extentid_t id,
     std::map<extent_protocol::extentid_t, std::string> &map) {
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   auto iter = file_map.find(id);
   if (iter != file_map.end()) {
     // 获取目录分割列表
@@ -125,7 +127,7 @@ int extent_server::readdir(
 
 int extent_server::create(extent_protocol::extentid_t pid, std::string name,
                           extent_protocol::extentid_t &cid) {
-  std::unique_lock<std::mutex> lk(mutex);
+  std::lock_guard<std::mutex> lk(mutex);
   // printf("create begin. parent inum %016llx\n", pid);
   std::cout << "create begin. parent id " << pid << " name " << name << "\n";
   auto iter = file_map.find(pid);
@@ -144,8 +146,52 @@ int extent_server::create(extent_protocol::extentid_t pid, std::string name,
     std::string &parent_content = iter->second.data_;
     parent_content += std::to_string(cid) + " ";
     parent_content += name + " ";
+    // 更新父目录的数据大小
+    iter->second.attr_.size = parent_content.size();
+    std::cout << "create inum: " << cid << "\n";
     return extent_protocol::OK;
   }
 
   return extent_protocol::IOERR;
+}
+
+int extent_server::read(extent_protocol::extentid_t inum, int off,
+                        int size, std::string &buf) {
+  std::lock_guard<std::mutex> lk(mutex);
+  extent_protocol::status ret;
+  auto iter = file_map.find(inum);
+  if (iter == file_map.end()) {
+    return extent_protocol::IOERR;
+  }
+  const std::string &data_ = iter->second.data_;
+  const extent_protocol::attr &attr_ = iter->second.attr_;
+  if (off > attr_.size) {
+    buf = "";
+    goto release;
+  }
+  buf = data_.substr(off, size);
+
+release:
+  return extent_protocol::OK;
+}
+
+// off 在 attr.size 内的时候，是覆盖而不是插入
+int extent_server::write(extent_protocol::extentid_t inum, int off,
+                         int size, std::string buf, int &) {
+  std::lock_guard<std::mutex> lk(mutex);
+  auto iter = file_map.find(inum);
+  if(iter == file_map.end()) {
+    return extent_protocol::IOERR;
+  }
+  std::string &data_ = iter->second.data_;
+  extent_protocol::attr &attr_ = iter->second.attr_;
+  if(off + size > attr_.size) {
+    data_.resize(off + size, '\0');
+  }
+  // data_.insert(off, buf.substr(0, size));
+  for(int i = 0; i < size; ++i) {
+    data_[off + i] = buf[i];
+  }
+  attr_.size = data_.size();
+  return extent_protocol::OK;
 }

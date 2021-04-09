@@ -47,6 +47,26 @@ yfs_client::isdir(inum inum)
   return ! isfile(inum);
 }
 
+int yfs_client::setattr(inum inum, const struct stat &attr) {
+  int r = OK;
+  // struct stat st;
+  printf("setattr %016llx\n", inum);
+  std::string buf;
+  std::string::size_type sz;
+  if(ec->get(inum, buf) != extent_protocol::OK) {
+    r = IOERR;
+    goto release;
+  }
+  buf.resize(attr.st_size, '\0');
+  if(ec->put(inum, buf) != extent_protocol::OK) {
+    r = IOERR;
+    goto release;
+  }
+
+release:
+  return r;
+}
+
 int
 yfs_client::getfile(inum inum, fileinfo &fin)
 {
@@ -123,5 +143,21 @@ int yfs_client::create(inum p_inum, std::string name, inum &c_inum) {
     return OK;
   }else if(status == extent_protocol::EXIST)
     return EXIST;
+  return IOERR;
+}
+
+int yfs_client::read(inum inum, off_t off, size_t size, std::string &buf) {
+  extent_protocol::status ret;
+  ret = ec->read(inum, off, size, buf);
+  if(ret == extent_protocol::OK)
+    return OK;
+  return IOERR;
+}
+
+int yfs_client::write(inum inum, off_t off, size_t size, std::string buf) {
+  extent_protocol::status ret;
+  ret = ec->write(inum, off, size, buf);
+  if(ret == extent_protocol::OK)
+    return OK;
   return IOERR;
 }

@@ -75,3 +75,18 @@ extent_client::create(extent_protocol::extentid_t pid, std::string name, extent_
   ret = cl->call(extent_protocol::create, pid, name, cid);
   return ret;
 }
+
+extent_protocol::status
+extent_client::read(extent_protocol::extentid_t inum, off_t off, size_t size, std::string &buf) {
+  extent_protocol::status ret;
+  ret = cl->call(extent_protocol::read, inum, (int)off, (int)size, buf);
+  return ret;
+}
+
+extent_protocol::status
+extent_client::write(extent_protocol::extentid_t inum, off_t off, size_t size, std::string buf) {
+  extent_protocol::status ret;
+  int r;
+  ret = cl->call(extent_protocol::write, inum, (int)off, (int)size, buf, r);
+  return ret;
+}

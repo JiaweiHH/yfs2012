@@ -43,6 +43,8 @@ public:
               std::map<extent_protocol::extentid_t, std::string> &);
   int create(extent_protocol::extentid_t, std::string,
              extent_protocol::extentid_t &);
+  int read(extent_protocol::extentid_t, int, int, std::string &);
+  int write(extent_protocol::extentid_t, int, int, std::string, int &);
 
 private:
   // inum - data
