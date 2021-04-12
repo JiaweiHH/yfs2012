@@ -16,16 +16,4 @@ class lock_protocol {
     stat
   };
 };
-
-class lock {
- public: 
-    enum lock_status {FREE, LOCKED};
-	lock_protocol::lockid_t lid;
-	int status;
-	pthread_cond_t lcond;
-														      
-	lock(lock_protocol::lockid_t);
-	lock(lock_protocol::lockid_t, int);
-	~lock(){};
-};
 #endif 

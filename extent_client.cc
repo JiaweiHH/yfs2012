@@ -54,4 +54,39 @@ extent_client::remove(extent_protocol::extentid_t eid)
   return ret;
 }
 
+extent_protocol::status
+extent_client::lookup(extent_protocol::extentid_t eid, const char *c_name, extent_protocol::extentid_t &child_id) {
+  extent_protocol::status ret = extent_protocol::OK;
+  std::string name(c_name);
+  ret = cl->call(extent_protocol::lookup, eid, name, child_id);
+  return ret;
+}
 
+extent_protocol::status
+extent_client::readdir(extent_protocol::extentid_t eid, std::map<extent_protocol::extentid_t, std::string> &map) {
+  extent_protocol::status ret = extent_protocol::OK;
+  ret = cl->call(extent_protocol::readdir, eid, map);
+  return ret;
+}
+
+extent_protocol::status
+extent_client::create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &cid) {
+  extent_protocol::status ret = extent_protocol::OK;
+  ret = cl->call(extent_protocol::create, pid, name, cid);
+  return ret;
+}
+
+extent_protocol::status
+extent_client::read(extent_protocol::extentid_t inum, off_t off, size_t size, std::string &buf) {
+  extent_protocol::status ret;
+  ret = cl->call(extent_protocol::read, inum, (int)off, (int)size, buf);
+  return ret;
+}
+
+extent_protocol::status
+extent_client::write(extent_protocol::extentid_t inum, off_t off, size_t size, std::string buf) {
+  extent_protocol::status ret;
+  int r;
+  ret = cl->call(extent_protocol::write, inum, (int)off, (int)size, buf, r);
+  return ret;
+}
