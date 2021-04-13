@@ -47,10 +47,11 @@ class yfs_client {
   int getdir(inum, dirinfo &);
   int lookup(inum, const char *, inum &);
   int readdir(inum, std::vector<yfs_client::dirent> &);
-  int create(inum , std::string , inum &);
+  int create(inum, std::string, bool, inum &);
   int setattr(inum, const struct stat &);
   int read(inum, off_t, size_t, std::string &);
   int write(inum, off_t, size_t, std::string);
+  int unlink(inum, std::string);
 };
 
 #endif 

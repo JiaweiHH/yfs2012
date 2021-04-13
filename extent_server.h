@@ -36,15 +36,16 @@ public:
   int put(extent_protocol::extentid_t id, std::string, int &);
   int get(extent_protocol::extentid_t id, std::string &);
   int getattr(extent_protocol::extentid_t id, extent_protocol::attr &);
-  int remove(extent_protocol::extentid_t id, int &);
+  int remove(extent_protocol::extentid_t id);
   int lookup(extent_protocol::extentid_t, std::string,
              extent_protocol::extentid_t &);
   int readdir(extent_protocol::extentid_t,
               std::map<extent_protocol::extentid_t, std::string> &);
-  int create(extent_protocol::extentid_t, std::string,
+  int create(extent_protocol::extentid_t, std::string, bool,
              extent_protocol::extentid_t &);
   int read(extent_protocol::extentid_t, int, int, std::string &);
   int write(extent_protocol::extentid_t, int, int, std::string, int &);
+  int unlink(extent_protocol::extentid_t, std::string, int &);
 
 private:
   // inum - data

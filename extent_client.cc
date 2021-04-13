@@ -70,9 +70,9 @@ extent_client::readdir(extent_protocol::extentid_t eid, std::map<extent_protocol
 }
 
 extent_protocol::status
-extent_client::create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &cid) {
+extent_client::create(extent_protocol::extentid_t pid, std::string name, bool ordinary_file, extent_protocol::extentid_t &cid) {
   extent_protocol::status ret = extent_protocol::OK;
-  ret = cl->call(extent_protocol::create, pid, name, cid);
+  ret = cl->call(extent_protocol::create, pid, name, ordinary_file, cid);
   return ret;
 }
 
@@ -88,5 +88,13 @@ extent_client::write(extent_protocol::extentid_t inum, off_t off, size_t size, s
   extent_protocol::status ret;
   int r;
   ret = cl->call(extent_protocol::write, inum, (int)off, (int)size, buf, r);
+  return ret;
+}
+
+extent_protocol::status
+extent_client::unlink(extent_protocol::extentid_t parent, std::string name) {
+  extent_protocol::status ret;
+  int r;
+  ret = cl->call(extent_protocol::unlink, parent, name, r);
   return ret;
 }

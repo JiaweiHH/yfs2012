@@ -141,8 +141,8 @@ int yfs_client::readdir(inum inum, std::vector<yfs_client::dirent> &v_contents) 
   return r;
 }
 
-int yfs_client::create(inum p_inum, std::string name, inum &c_inum) {
-  extent_protocol::status status = ec->create(p_inum, name, c_inum);
+int yfs_client::create(inum p_inum, std::string name, bool ordinary_file, inum &c_inum) {
+  extent_protocol::status status = ec->create(p_inum, name, ordinary_file, c_inum);
   if(status == extent_protocol::OK) {
     std::cout << name << " create OK\n";
     return OK;
@@ -162,6 +162,13 @@ int yfs_client::read(inum inum, off_t off, size_t size, std::string &buf) {
 int yfs_client::write(inum inum, off_t off, size_t size, std::string buf) {
   extent_protocol::status ret;
   ret = ec->write(inum, off, size, buf);
+  if(ret == extent_protocol::OK)
+    return OK;
+  return IOERR;
+}
+
+int yfs_client::unlink(inum inum, std::string name) {
+  extent_protocol::status ret = ec->unlink(inum, name);
   if(ret == extent_protocol::OK)
     return OK;
   return IOERR;

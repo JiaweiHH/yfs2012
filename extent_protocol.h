@@ -19,7 +19,8 @@ class extent_protocol {
     readdir,
     create,
     read,
-    write
+    write,
+    unlink
   };
 
   struct attr {

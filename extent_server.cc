@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <iterator>
 
 extent_server::extent_server() {
   std::string content = "";
@@ -75,9 +74,8 @@ int extent_server::getattr(extent_protocol::extentid_t id,
   return extent_protocol::IOERR;
 }
 
-int extent_server::remove(extent_protocol::extentid_t id, int &) {
+int extent_server::remove(extent_protocol::extentid_t id) {
   // You fill this in for Lab 2.
-  std::lock_guard<std::mutex> lk(mutex);
   auto iter = file_map.find(id);
   if (iter != file_map.end()) {
     file_map.erase(iter);
@@ -126,6 +124,7 @@ int extent_server::readdir(
 }
 
 int extent_server::create(extent_protocol::extentid_t pid, std::string name,
+                          bool ordinary_file,
                           extent_protocol::extentid_t &cid) {
   std::lock_guard<std::mutex> lk(mutex);
   // printf("create begin. parent inum %016llx\n", pid);
@@ -139,7 +138,7 @@ int extent_server::create(extent_protocol::extentid_t pid, std::string name,
         return extent_protocol::EXIST;
 
     // 添加文件
-    cid = random_inum();
+    cid = random_inum(ordinary_file);
     std::string content{};
     put_content(cid, content);
     // 添加目录项
@@ -148,15 +147,16 @@ int extent_server::create(extent_protocol::extentid_t pid, std::string name,
     parent_content += name + " ";
     // 更新父目录的数据大小
     iter->second.attr_.size = parent_content.size();
-    std::cout << "create inum: " << cid << "\n";
+    iter->second.attr_.ctime = iter->second.attr_.mtime = time(nullptr);
+    std::cout << "create inum: " << cid << ". parent content: " << parent_content << "\n";
     return extent_protocol::OK;
   }
 
   return extent_protocol::IOERR;
 }
 
-int extent_server::read(extent_protocol::extentid_t inum, int off,
-                        int size, std::string &buf) {
+int extent_server::read(extent_protocol::extentid_t inum, int off, int size,
+                        std::string &buf) {
   std::lock_guard<std::mutex> lk(mutex);
   extent_protocol::status ret;
   auto iter = file_map.find(inum);
@@ -164,34 +164,66 @@ int extent_server::read(extent_protocol::extentid_t inum, int off,
     return extent_protocol::IOERR;
   }
   const std::string &data_ = iter->second.data_;
-  const extent_protocol::attr &attr_ = iter->second.attr_;
+  extent_protocol::attr &attr_ = iter->second.attr_;
   if (off > attr_.size) {
     buf = "";
     goto release;
   }
   buf = data_.substr(off, size);
-
 release:
+  attr_.atime = time(nullptr);
   return extent_protocol::OK;
 }
 
 // off 在 attr.size 内的时候，是覆盖而不是插入
-int extent_server::write(extent_protocol::extentid_t inum, int off,
-                         int size, std::string buf, int &) {
+int extent_server::write(extent_protocol::extentid_t inum, int off, int size,
+                         std::string buf, int &) {
   std::lock_guard<std::mutex> lk(mutex);
   auto iter = file_map.find(inum);
-  if(iter == file_map.end()) {
+  if (iter == file_map.end()) {
     return extent_protocol::IOERR;
   }
   std::string &data_ = iter->second.data_;
   extent_protocol::attr &attr_ = iter->second.attr_;
-  if(off + size > attr_.size) {
+  if (off + size > attr_.size) {
     data_.resize(off + size, '\0');
   }
   // data_.insert(off, buf.substr(0, size));
-  for(int i = 0; i < size; ++i) {
+  for (int i = 0; i < size; ++i) {
     data_[off + i] = buf[i];
   }
   attr_.size = data_.size();
+  attr_.mtime = attr_.ctime = time(nullptr);
+  return extent_protocol::OK;
+}
+
+int extent_server::unlink(extent_protocol::extentid_t parent, std::string d_name, int &) {
+  std::lock_guard<std::mutex> lk(mutex);
+  auto iter = file_map.find(parent);
+  if(iter == file_map.end())
+    return extent_protocol::IOERR;
+  // 找到目录项
+  std::cout << "rm file: " << d_name << "\n";
+  std::string &data_ = iter->second.data_;
+  std::istringstream istr(data_);
+
+  extent_protocol::extentid_t inum;
+  std::string name;
+  while(istr >> inum) {
+    istr >> name;
+    if(name == d_name) {
+      std::string s_inum = std::to_string(inum);
+      data_.erase(data_.find(s_inum), s_inum.size() + 1);
+      data_.erase(data_.find(name), name.length() + 1);
+      iter->second.attr_.size -= s_inum.size() + name.size() + 2;
+      goto find;
+    }
+  }
+  return extent_protocol::IOERR;
+
+find:
+  iter->second.attr_.mtime = iter->second.attr_.ctime = time(nullptr);
+  remove(inum);
+  std::cout << "parent content: " << data_ << "\n";
   return extent_protocol::OK;
 }

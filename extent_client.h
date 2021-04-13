@@ -22,9 +22,10 @@ class extent_client {
   extent_protocol::status remove(extent_protocol::extentid_t eid);
   extent_protocol::status lookup(extent_protocol::extentid_t, const char *, extent_protocol::extentid_t &);
   extent_protocol::status readdir(extent_protocol::extentid_t, std::map<extent_protocol::extentid_t, std::string> &);
-  extent_protocol::status create(extent_protocol::extentid_t, std::string , extent_protocol::extentid_t &);
+  extent_protocol::status create(extent_protocol::extentid_t, std::string, bool, extent_protocol::extentid_t &);
   extent_protocol::status read(extent_protocol::extentid_t, off_t, size_t, std::string &);
   extent_protocol::status write(extent_protocol::extentid_t, off_t, size_t, std::string);
+  extent_protocol::status unlink(extent_protocol::extentid_t, std::string);
 };
 
 #endif 
